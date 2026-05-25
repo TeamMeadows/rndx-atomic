@@ -86,7 +86,7 @@ float rounded_arc_sdf(float2 p, float2 b, float4 r) {
     return max(box_dist, angular_dist);
 }
 
-float calculate_rounded_alpha(PS_INPUT i) {
+float calculate_rounded_alpha(PS_INPUT i, out float2 out_centered_pos) {
     float2 screen_pos = i.uv.xy * SIZE;
     float2 rect_half_size = SIZE * 0.5;
 
@@ -94,6 +94,7 @@ float calculate_rounded_alpha(PS_INPUT i) {
 
     // Apply rotation
     centered_pos = rotate_point(centered_pos);
+    out_centered_pos = centered_pos;
 
     float dist_outer = rounded_arc_sdf(centered_pos, rect_half_size, RADIUS);
     float aa_outer = blended_AA(dist_outer, screen_pos);
