@@ -18,8 +18,8 @@ const float4x4 g_viewProjMatrix : register( c11 );
 #define AA g_viewProjMatrix[2].y // Anti-aliasing smoothness (pixels)
 #define BLUR_INTENSITY g_viewProjMatrix[2].z // Blur intensity
 #define BLUR_VERTICAL Constants0.x
-#define START_ANGLE g_viewProjMatrix[2].w // Start angle in radians
-#define END_ANGLE g_viewProjMatrix[3].x   // End angle in radians
+#define START_ANGLE g_viewProjMatrix[2].w // Start angle in radians (set in lua)
+#define SWEEP_ANGLE g_viewProjMatrix[3].x // Sweep width in radians, or -1 for full circle (set in lua)
 #define ROTATION g_viewProjMatrix[3].y    // Rotation in radians
 
 #define DEG_TO_RAD 0.01745329251994329576923690768489
@@ -67,20 +67,21 @@ float blended_AA(float dist, float2 uv) {
 float rounded_arc_sdf(float2 p, float2 b, float4 r) {
     float box_dist = rounded_box_sdf(p, b, r);
 
-    if (END_ANGLE - START_ANGLE >= 360.0) {
+    // SWEEP_ANGLE is precomputed in lua: -1 means full circle
+    if (SWEEP_ANGLE < 0.0) {
         return box_dist;
     }
 
-    // Convert to radians and normalize
-    float start_rad = fmod(START_ANGLE * DEG_TO_RAD + TWO_PI, TWO_PI);
-    float end_rad = fmod(END_ANGLE * DEG_TO_RAD + TWO_PI, TWO_PI);
-    float angle = fmod(atan2(p.y, p.x) + TWO_PI, TWO_PI);
+    // angle of this pixel relative to the start, wrapped into [0, TWO_PI)
+    float rel = fmod(atan2(p.y, p.x) - START_ANGLE + TWO_PI * 2.0, TWO_PI);
 
     float angular_dist;
-    if (angle >= start_rad && angle <= end_rad) {
-        angular_dist = -min(angle - start_rad, end_rad - angle) * length(p);
+    if (rel <= SWEEP_ANGLE) {
+        angular_dist = -min(rel, SWEEP_ANGLE - rel) * length(p);
     } else {
-        angular_dist = min(abs(angle - start_rad), abs(angle - end_rad)) * length(p);
+        float to_end = rel - SWEEP_ANGLE;
+        float to_start = TWO_PI - rel;
+        angular_dist = min(to_start, to_end) * length(p);
     }
 
     return max(box_dist, angular_dist);

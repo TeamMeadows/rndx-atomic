@@ -223,14 +223,24 @@ end
 local function SetupDraw()
 	local TL, TR, BL, BR = normalize_corner_radii()
 
+	local start_rad, sweep_rad
+	local sweep = END_ANGLE - START_ANGLE
+	if sweep >= 360 then
+		start_rad, sweep_rad = 0, -1 -- full circle, shader skips arc math
+	else
+		if sweep < 0 then sweep = sweep + 360 end
+		start_rad = (START_ANGLE % 360) * 0.017453292519943295
+		sweep_rad = sweep * 0.017453292519943295
+	end
+
 	local matrix = MATRIXES[MAT]
 	MATRIX_SetUnpacked(
 		matrix,
 
-		BL, W, OUTLINE_THICKNESS or -1, END_ANGLE,
+		BL, W, OUTLINE_THICKNESS or -1, sweep_rad,
 		BR, H, SHADOW_INTENSITY, ROTATION,
 		TR, SHAPE, BLUR_INTENSITY or 1.0, 0,
-		TL, TEXTURE and 1 or 0, START_ANGLE, 0
+		TL, TEXTURE and 1 or 0, start_rad, 0
 	)
 	MATERIAL_SetMatrix(MAT, "$viewprojmat", matrix)
 
@@ -566,7 +576,7 @@ local RECT = {
 	Flags       = BASE_FUNCS.Flags,
 
 	Draw        = function(self)
-		if START_ANGLE == END_ANGLE then
+		if END_ANGLE == START_ANGLE then
 			return -- nothing to draw
 		end
 
@@ -690,11 +700,11 @@ function RNDX.SetDefaultShape(shape)
 end
 
 function RNDX.SetDefaultBlurIntensity(val)
-    DEFAULT_BLUR_INTENSITY = math_max(0, tonumber(val) or 1.0)
+	DEFAULT_BLUR_INTENSITY = math_max(0, tonumber(val) or 1.0)
 end
 
 function RNDX.GetDefaultBlurIntensity()
-    return DEFAULT_BLUR_INTENSITY
+	return DEFAULT_BLUR_INTENSITY
 end
 
 return RNDX
