@@ -228,7 +228,8 @@ local function SetupDraw()
 	if sweep >= 360 then
 		start_rad, sweep_rad = 0, -1 -- full circle, shader skips arc math
 	else
-		start_rad = START_ANGLE * 0.017453292519943295
+		if sweep < 0 then sweep = sweep + 360 end
+		start_rad = (START_ANGLE % 360) * 0.017453292519943295
 		sweep_rad = sweep * 0.017453292519943295
 	end
 
@@ -575,7 +576,7 @@ local RECT = {
 	Flags       = BASE_FUNCS.Flags,
 
 	Draw        = function(self)
-		if END_ANGLE - START_ANGLE <= 0 then
+		if END_ANGLE == START_ANGLE then
 			return -- nothing to draw
 		end
 
