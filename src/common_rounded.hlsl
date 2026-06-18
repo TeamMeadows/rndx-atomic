@@ -67,20 +67,28 @@ float blended_AA(float dist, float2 uv) {
 float rounded_arc_sdf(float2 p, float2 b, float4 r) {
     float box_dist = rounded_box_sdf(p, b, r);
 
-    if (END_ANGLE - START_ANGLE >= 360.0) {
+    float sweep = END_ANGLE - START_ANGLE;
+    if (sweep >= 360.0) {
         return box_dist;
     }
+    if (sweep <= 0.0) {
+        // nothing to draw
+        return 1e9;
+    }
 
-    // Convert to radians and normalize
-    float start_rad = fmod(START_ANGLE * DEG_TO_RAD + TWO_PI, TWO_PI);
-    float end_rad = fmod(END_ANGLE * DEG_TO_RAD + TWO_PI, TWO_PI);
-    float angle = fmod(atan2(p.y, p.x) + TWO_PI, TWO_PI);
+    float start_rad = START_ANGLE * DEG_TO_RAD;
+    float sweep_rad = sweep * DEG_TO_RAD;
+
+    // angle of this pixel relative to the start, wrapped into [0, TWO_PI)
+    float rel = fmod(atan2(p.y, p.x) - start_rad + TWO_PI * 2.0, TWO_PI);
 
     float angular_dist;
-    if (angle >= start_rad && angle <= end_rad) {
-        angular_dist = -min(angle - start_rad, end_rad - angle) * length(p);
+    if (rel <= sweep_rad) {
+        angular_dist = -min(rel, sweep_rad - rel) * length(p);
     } else {
-        angular_dist = min(abs(angle - start_rad), abs(angle - end_rad)) * length(p);
+        float to_end = rel - sweep_rad;
+        float to_start = TWO_PI - rel;
+        angular_dist = min(to_start, to_end) * length(p);
     }
 
     return max(box_dist, angular_dist);
