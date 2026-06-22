@@ -1,50 +1,40 @@
-name: Build
-
 on:
   push:
-    branches:
-      - master
-      - gmod-colors
+    tags:
+      - '*.*.*'
+
+permissions:
+  contents: write
 
 jobs:
-  now:
+  build:
     runs-on: windows-2022
-    permissions:
-      contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Build
+      - name: Build shaders
         shell: pwsh
         run: |
+          cd shaders
           python build.py
-          copy src/rndx_compiled.lua C:\rndx.lua
 
-      - name: Set Unix Timestamp
-        id: time
+      - name: Bundle RNDX
+        uses: TeamMeadows/bundler@v0.2.0
+        with:
+          name: rndx
+          type: package
+
+      - name: Pack bundle into zip
         shell: pwsh
         run: |
-          $timestamp = Get-Date -UFormat %s
-          echo "timestamp=$timestamp" >> $env:GITHUB_OUTPUT
+          New-Item -ItemType Directory -Force -Path artifacts
+          Compress-Archive -Path dist/rndx -DestinationPath artifacts/rndx-release.zip
 
-      - name: Release (master)
-        if: github.ref == 'refs/heads/master'
-        uses: ncipollo/release-action@v1
+      - name: Publish to releases
+        uses: softprops/action-gh-release@v2
         with:
-          tag: ${{ steps.time.outputs.timestamp }}
-          name: "RNDX ${{ steps.time.outputs.timestamp }}"
-          allowUpdates: true
-          artifacts: C:\rndx.lua
-          makeLatest: true
-
-      - name: Release (gmod-colors)
-        if: github.ref == 'refs/heads/gmod-colors'
-        uses: ncipollo/release-action@v1
-        with:
-          tag: gmod-colors-${{ steps.time.outputs.timestamp }}
-          name: "RNDX (gmod-colors) ${{ steps.time.outputs.timestamp }}"
-          allowUpdates: true
-          artifacts: C:\rndx.lua
-          prerelease: true
-          makeLatest: false
+          files: artifacts/rndx-release.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
