@@ -286,45 +286,99 @@ local function draw_rounded(x, y, w, h, col, flags, tl, tr, bl, br, texture, thi
 	return surface_DrawTexturedRectUV(x, y, w, h, -0.015625, -0.015625, 1.015625, 1.015625)
 end
 
-function package:draw(r, x, y, w, h, col, flags)
-	return draw_rounded(x, y, w, h, col, flags, r, r, r, r)
+---@param rounding integer
+---@param x integer
+---@param y integer
+---@param w integer
+---@param h integer
+---@param color? Color
+---@param flags? integer
+function package:draw(rounding, x, y, w, h, color, flags)
+	return draw_rounded(x, y, w, h, color, flags, rounding, rounding, rounding, rounding)
 end
 
-function package:drawOutlined(r, x, y, w, h, col, thickness, flags)
-	return draw_rounded(x, y, w, h, col, flags, r, r, r, r, nil, thickness or 1)
+---@param rounding integer
+---@param x integer
+---@param y integer
+---@param w integer
+---@param h integer
+---@param color Color
+---@param thickness? integer @default = 1
+---@param flags? integer
+function package:drawOutlined(rounding, x, y, w, h, color, thickness, flags)
+	return draw_rounded(x, y, w, h, color, flags, rounding, rounding, rounding, rounding, nil, thickness or 1)
 end
 
-function package:drawTexture(r, x, y, w, h, col, texture, flags)
-	return draw_rounded(x, y, w, h, col, flags, r, r, r, r, texture)
+---@param rounding integer
+---@param x integer
+---@param y integer
+---@param w integer
+---@param h integer
+---@param color Color
+---@param texture ITexture
+---@param flags? integer
+function package:drawTexture(rounding, x, y, w, h, color, texture, flags)
+	return draw_rounded(x, y, w, h, color, flags, rounding, rounding, rounding, rounding, texture)
 end
 
-function package:drawMaterial(r, x, y, w, h, col, mat, flags)
-	local tex = mat:GetTexture("$basetexture")
-	if tex then
-		return self:drawTexture(r, x, y, w, h, col, tex, flags)
+---@param rounding integer
+---@param x integer
+---@param y integer
+---@param w integer
+---@param h integer
+---@param color Color
+---@param material IMaterial
+---@param flags? integer
+function package:drawMaterial(rounding, x, y, w, h, color, material, flags)
+	local tex = material:GetTexture("$basetexture")
+
+	if (tex) then
+		return self:drawTexture(rounding, x, y, w, h, color, tex, flags)
 	end
 end
 
-function package:drawCircle(x, y, r, col, flags)
-	return self:draw(r / 2, x - r / 2, y - r / 2, r, r, col, (flags or 0) + SHAPE_CIRCLE)
+---@param x integer
+---@param y integer
+---@param radius integer
+---@param color Color
+---@param flags? integer
+function package:drawCircle(x, y, radius, color, flags)
+	return self:draw(radius / 2, x - radius / 2, y - radius / 2, radius, radius, color, (flags or 0) + SHAPE_CIRCLE)
 end
 
-function package:drawCircleOutlined(x, y, r, col, thickness, flags)
-	return self:drawOutlined(r / 2, x - r / 2, y - r / 2, r, r, col, thickness, (flags or 0) + SHAPE_CIRCLE)
+---@param x integer
+---@param y integer
+---@param radius integer
+---@param color Color
+---@param thickness integer
+---@param flags? integer
+function package:drawCircleOutlined(x, y, radius, color, thickness, flags)
+	return self:drawOutlined(radius / 2, x - radius / 2, y - radius / 2, radius, radius, color, thickness, (flags or 0) + SHAPE_CIRCLE)
 end
 
-function package:drawCircleTexture(x, y, r, col, texture, flags)
-	return self:drawTexture(r / 2, x - r / 2, y - r / 2, r, r, col, texture, (flags or 0) + SHAPE_CIRCLE)
+---@param x integer
+---@param y integer
+---@param radius integer
+---@param color Color
+---@param texture ITexture
+---@param flags? integer
+function package:drawCircleTexture(x, y, radius, color, texture, flags)
+	return self:drawTexture(radius / 2, x - radius / 2, y - radius / 2, radius, radius, color, texture, (flags or 0) + SHAPE_CIRCLE)
 end
 
-function package:drawCircleMaterial(x, y, r, col, mat, flags)
-	return self:drawMaterial(r / 2, x - r / 2, y - r / 2, r, r, col, mat, (flags or 0) + SHAPE_CIRCLE)
+---@param x integer
+---@param y integer
+---@param radius integer
+---@param color Color
+---@param material IMaterial
+---@param flags? integer
+function package:drawCircleMaterial(x, y, radius, color, material, flags)
+	return self:drawMaterial(radius / 2, x - radius / 2, y - radius / 2, radius, radius, color, material, (flags or 0) + SHAPE_CIRCLE)
 end
 
 local USE_SHADOWS_BLUR = false
-
 local function draw_blur()
-	if USE_SHADOWS_BLUR then
+	if (USE_SHADOWS_BLUR) then
 		MAT = SHADOWS_BLUR_MAT
 	else
 		MAT = ROUNDED_BLUR_MAT
@@ -342,10 +396,20 @@ local function draw_blur()
 	surface_DrawTexturedRect(X, Y, W, H)
 end
 
+---@param x integer
+---@param y integer
+---@param w integer
+---@param h integer
+---@param flags? integer
+---@param tl integer
+---@param tr integer
+---@param bl integer
+---@param br integer
+---@param thickness integer
 function package:drawBlur(x, y, w, h, flags, tl, tr, bl, br, thickness)
 	RESET_PARAMS()
 
-	if not flags then
+	if (not flags) then
 		flags = DEFAULT_DRAW_FLAGS
 	end
 
@@ -394,8 +458,21 @@ local function draw_shadows(r, g, b, a)
 	surface_DrawTexturedRectUV(X, Y, W, H, -0.015625, -0.015625, 1.015625, 1.015625)
 end
 
-function package:drawShadowsEx(x, y, w, h, col, flags, tl, tr, bl, br, spread, intensity, thickness)
-	if col and col.a == 0 then
+---@param x integer
+---@param y integer
+---@param w integer
+---@param h integer
+---@param color? Color
+---@param flags? integer
+---@param tl integer
+---@param tr integer
+---@param bl integer
+---@param br integer
+---@param spread? integer
+---@param intensity? integer
+---@param thickness? integer
+function package:drawShadowsEx(x, y, w, h, color, flags, tl, tr, bl, br, spread, intensity, thickness)
+	if (color and color.a == 0) then
 		return
 	end
 
@@ -425,10 +502,10 @@ function package:drawShadowsEx(x, y, w, h, col, flags, tl, tr, bl, br, spread, i
 
 	USING_BLUR = bit_band(flags, BLUR) ~= 0
 
-	if bit_band(flags, MANUAL_COLOR) ~= 0 then
+	if (bit_band(flags, MANUAL_COLOR) ~= 0) then
 		draw_shadows(false, nil, nil, nil)
-	elseif col then
-		draw_shadows(col.r, col.g, col.b, col.a)
+	elseif (color) then
+		draw_shadows(color.r, color.g, color.b, color.a)
 	else
 		draw_shadows(0, 0, 0, 255)
 	end
@@ -436,14 +513,34 @@ function package:drawShadowsEx(x, y, w, h, col, flags, tl, tr, bl, br, spread, i
 	DisableClipping(OLD_CLIPPING_STATE)
 end
 
-function package:drawShadows(r, x, y, w, h, col, spread, intensity, flags)
-	return self:drawShadowsEx(x, y, w, h, col, flags, r, r, r, r, spread, intensity)
+---@param rounding integer
+---@param x integer
+---@param y integer
+---@param w integer
+---@param h integer
+---@param color? Color
+---@param spread? integer
+---@param intensity? integer
+---@param flags? integer
+function package:drawShadows(rounding, x, y, w, h, color, spread, intensity, flags)
+	return self:drawShadowsEx(x, y, w, h, color, flags, rounding, rounding, rounding, rounding, spread, intensity)
 end
 
-function package:drawShadowsOutlined(r, x, y, w, h, col, thickness, spread, intensity, flags)
-	return self:drawShadowsEx(x, y, w, h, col, flags, r, r, r, r, spread, intensity, thickness or 1)
+---@param rounding integer
+---@param x integer
+---@param y integer
+---@param w integer
+---@param h integer
+---@param color? Color
+---@param thickness? integer @default = 1
+---@param spread? integer
+---@param intensity? integer
+---@param flags? integer
+function package:drawShadowsOutlined(rounding, x, y, w, h, color, thickness, spread, intensity, flags)
+	return self:drawShadowsEx(x, y, w, h, color, flags, rounding, rounding, rounding, rounding, spread, intensity, thickness or 1)
 end
 
+-- todo it's not used
 local BASE_FUNCS; BASE_FUNCS = {
 	Rad = function(self, rad)
 		TL, TR, BL, BR = rad, rad, rad, rad
@@ -546,6 +643,7 @@ local BASE_FUNCS; BASE_FUNCS = {
 
 }
 
+-- todo it's not used
 local RECT = {
 	Rad         = BASE_FUNCS.Rad,
 	Radii       = BASE_FUNCS.Radii,
@@ -618,6 +716,7 @@ local RECT = {
 	end,
 }
 
+-- todo it's not used
 local CIRCLE = {
 	Texture = BASE_FUNCS.Texture,
 	Material = BASE_FUNCS.Material,
@@ -635,6 +734,7 @@ local CIRCLE = {
 	GetMaterial = RECT.GetMaterial,
 }
 
+-- todo it's not used
 local TYPES = {
 	Rect = function(x, y, w, h)
 		RESET_PARAMS()
@@ -666,24 +766,30 @@ package.SHAPE_IOS = SHAPE_IOS
 package.BLUR = BLUR
 package.MANUAL_COLOR = MANUAL_COLOR
 
+---@param flags integer
+---@param flag integer
+---@param bool boolean
 function package:setFlag(flags, flag, bool)
 	flag = self[flag] or flag
-	if tobool(bool) then
+	if (tobool(bool)) then
 		return bit.bor(flags, flag)
 	else
 		return bit.band(flags, bit.bnot(flag))
 	end
 end
 
+---@param shape integer
 function package:setDefaultShape(shape)
 	DEFAULT_SHAPE = shape or SHAPE_FIGMA
 	DEFAULT_DRAW_FLAGS = DEFAULT_SHAPE
 end
 
+---@param val integer
 function package:setDefaultBlurIntensity(val)
 	DEFAULT_BLUR_INTENSITY = math_max(0, tonumber(val) or 1.0)
 end
 
+---@return integer
 function package:getDefaultBlurIntensity()
 	return DEFAULT_BLUR_INTENSITY
 end
