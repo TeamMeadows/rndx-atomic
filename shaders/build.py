@@ -76,7 +76,7 @@ def main():
     b64_encoded_data = base64.b64encode(binary_data).decode("utf-8")
 
     # Load and modify the src/rndx.lua file by replacing placeholders.
-    rndx_path = os.path.join("src", "rndx.lua")
+    rndx_path = os.path.join("..", "lua", "atomic", "packages", "srlion-rndx", "common", "client.lua")
     if not os.path.exists(rndx_path):
         print(f"Error: The file '{rndx_path}' does not exist.")
         sys.exit(1)
@@ -89,7 +89,7 @@ def main():
         "SHADERS_GMA_PLACEHOLDER", b64_encoded_data)
 
     # Write the updated content back to the file.
-    output_path = os.path.join("src", "rndx_compiled.lua")
+    output_path = os.path.join("..", "lua", "atomic", "packages", "srlion-rndx", "common", "client.lua")
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(lua_content)
 
