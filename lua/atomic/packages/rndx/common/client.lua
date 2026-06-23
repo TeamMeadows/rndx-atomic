@@ -11,7 +11,6 @@ local render_CopyRenderTargetToTexture = render.CopyRenderTargetToTexture
 local math_min = math.min
 local math_max = math.max
 local DisableClipping = DisableClipping
-local type = type
 
 local SHADERS_VERSION = "SHADERS_VERSION_PLACEHOLDER"
 local SHADERS_GMA = [========[SHADERS_GMA_PLACEHOLDER]========]
@@ -160,8 +159,7 @@ local USING_BLUR, BLUR_INTENSITY
 local COL_R, COL_G, COL_B, COL_A
 local SHAPE, OUTLINE_THICKNESS
 local START_ANGLE, END_ANGLE, ROTATION
-local CLIP_PANEL
-local SHADOW_ENABLED, SHADOW_SPREAD, SHADOW_INTENSITY
+local SHADOW_SPREAD, SHADOW_INTENSITY
 local function RESET_PARAMS()
 	MAT = nil
 	X, Y, W, H = 0, 0, 0, 0
@@ -172,7 +170,7 @@ local function RESET_PARAMS()
 	SHAPE, OUTLINE_THICKNESS = SHAPES[DEFAULT_SHAPE], -1
 	START_ANGLE, END_ANGLE, ROTATION = 0, 360, 0
 	CLIP_PANEL = nil
-	SHADOW_ENABLED, SHADOW_SPREAD, SHADOW_INTENSITY = false, 0, 0
+	SHADOW_SPREAD, SHADOW_INTENSITY = 0, 0
 end
 
 local normalize_corner_radii; do
@@ -539,219 +537,6 @@ end
 function package:drawShadowsOutlined(rounding, x, y, w, h, color, thickness, spread, intensity, flags)
 	return self:drawShadowsEx(x, y, w, h, color, flags, rounding, rounding, rounding, rounding, spread, intensity, thickness or 1)
 end
-
--- todo it's not used
-local BASE_FUNCS; BASE_FUNCS = {
-	Rad = function(self, rad)
-		TL, TR, BL, BR = rad, rad, rad, rad
-		return self
-	end,
-	Radii = function(self, tl, tr, bl, br)
-		TL, TR, BL, BR = tl or 0, tr or 0, bl or 0, br or 0
-		return self
-	end,
-	Texture = function(self, texture)
-		TEXTURE = texture
-		return self
-	end,
-	Material = function(self, mat)
-		local tex = mat:GetTexture("$basetexture")
-		if tex then
-			TEXTURE = tex
-		end
-		return self
-	end,
-	Outline = function(self, thickness)
-		OUTLINE_THICKNESS = thickness
-		return self
-	end,
-	Shape = function(self, shape)
-		SHAPE = SHAPES[shape] or 2.2
-		return self
-	end,
-	Color = function(self, col_or_r, g, b, a)
-		if type(col_or_r) == "number" then
-			COL_R, COL_G, COL_B, COL_A = col_or_r, g or 255, b or 255, a or 255
-		else
-			COL_R, COL_G, COL_B, COL_A = col_or_r.r, col_or_r.g, col_or_r.b, col_or_r.a
-		end
-		return self
-	end,
-	Blur = function(self, intensity)
-		if not intensity then
-			intensity = DEFAULT_BLUR_INTENSITY
-		end
-		intensity = math_max(intensity, 0)
-		USING_BLUR, BLUR_INTENSITY = true, intensity
-		return self
-	end,
-	Rotation = function(self, angle)
-		ROTATION = math.rad(angle or 0)
-		return self
-	end,
-	StartAngle = function(self, angle)
-		START_ANGLE = angle or 0
-		return self
-	end,
-	EndAngle = function(self, angle)
-		END_ANGLE = angle or 360
-		return self
-	end,
-	Shadow = function(self, spread, intensity)
-		SHADOW_ENABLED, SHADOW_SPREAD, SHADOW_INTENSITY = true, spread or 30, intensity or (spread or 30) * 1.2
-		return self
-	end,
-	Clip = function(self, pnl)
-		CLIP_PANEL = pnl
-		return self
-	end,
-	Flags = function(self, flags)
-		flags = flags or 0
-
-		-- Corner flags
-		if bit_band(flags, NO_TL) ~= 0 then
-			TL = 0
-		end
-		if bit_band(flags, NO_TR) ~= 0 then
-			TR = 0
-		end
-		if bit_band(flags, NO_BL) ~= 0 then
-			BL = 0
-		end
-		if bit_band(flags, NO_BR) ~= 0 then
-			BR = 0
-		end
-
-		-- Shape flags
-		local shape_flag = bit_band(flags, SHAPE_CIRCLE + SHAPE_FIGMA + SHAPE_IOS)
-		if shape_flag ~= 0 then
-			SHAPE = SHAPES[shape_flag] or SHAPES[DEFAULT_SHAPE]
-		end
-
-		-- Blur flag
-		if bit_band(flags, BLUR) ~= 0 then
-			BASE_FUNCS.Blur(self)
-		end
-
-		-- Manual color flag
-		if bit_band(flags, MANUAL_COLOR) ~= 0 then
-			COL_R = nil
-		end
-
-		return self
-	end,
-
-}
-
--- todo it's not used
-local RECT = {
-	Rad         = BASE_FUNCS.Rad,
-	Radii       = BASE_FUNCS.Radii,
-	Texture     = BASE_FUNCS.Texture,
-	Material    = BASE_FUNCS.Material,
-	Outline     = BASE_FUNCS.Outline,
-	Shape       = BASE_FUNCS.Shape,
-	Color       = BASE_FUNCS.Color,
-	Blur        = BASE_FUNCS.Blur,
-	Rotation    = BASE_FUNCS.Rotation,
-	StartAngle  = BASE_FUNCS.StartAngle,
-	EndAngle    = BASE_FUNCS.EndAngle,
-	Clip        = BASE_FUNCS.Clip,
-	Shadow      = BASE_FUNCS.Shadow,
-	Flags       = BASE_FUNCS.Flags,
-
-	Draw        = function(self)
-		if END_ANGLE == START_ANGLE then
-			return -- nothing to draw
-		end
-
-		local OLD_CLIPPING_STATE
-		if SHADOW_ENABLED or CLIP_PANEL then
-			-- if we are inside a panel, we need to draw outside of it
-			OLD_CLIPPING_STATE = DisableClipping(true)
-		end
-
-		if CLIP_PANEL then
-			local sx, sy = CLIP_PANEL:LocalToScreen(0, 0)
-			local sw, sh = CLIP_PANEL:GetSize()
-			render.SetScissorRect(sx, sy, sx + sw, sy + sh, true)
-		end
-
-		if SHADOW_ENABLED then
-			setup_shadows()
-			draw_shadows(COL_R, COL_G, COL_B, COL_A)
-		elseif USING_BLUR then
-			draw_blur()
-		else
-			if TEXTURE then
-				MAT = ROUNDED_TEXTURE_MAT
-				MATERIAL_SetTexture(MAT, "$basetexture", TEXTURE)
-			end
-
-			SetupDraw()
-			surface_DrawTexturedRectUV(X, Y, W, H, -0.015625, -0.015625, 1.015625, 1.015625)
-		end
-
-		if CLIP_PANEL then
-			render.SetScissorRect(0, 0, 0, 0, false)
-		end
-
-		if SHADOW_ENABLED or CLIP_PANEL then
-			DisableClipping(OLD_CLIPPING_STATE)
-		end
-	end,
-
-	GetMaterial = function(self)
-		if SHADOW_ENABLED or USING_BLUR then
-			error("You can't get the material of a shadowed or blurred rectangle!")
-		end
-
-		if TEXTURE then
-			MAT = ROUNDED_TEXTURE_MAT
-			MATERIAL_SetTexture(MAT, "$basetexture", TEXTURE)
-		end
-		SetupDraw()
-
-		return MAT
-	end,
-}
-
--- todo it's not used
-local CIRCLE = {
-	Texture = BASE_FUNCS.Texture,
-	Material = BASE_FUNCS.Material,
-	Outline = BASE_FUNCS.Outline,
-	Color = BASE_FUNCS.Color,
-	Blur = BASE_FUNCS.Blur,
-	Rotation = BASE_FUNCS.Rotation,
-	StartAngle = BASE_FUNCS.StartAngle,
-	EndAngle = BASE_FUNCS.EndAngle,
-	Clip = BASE_FUNCS.Clip,
-	Shadow = BASE_FUNCS.Shadow,
-	Flags = BASE_FUNCS.Flags,
-
-	Draw = RECT.Draw,
-	GetMaterial = RECT.GetMaterial,
-}
-
--- todo it's not used
-local TYPES = {
-	Rect = function(x, y, w, h)
-		RESET_PARAMS()
-		MAT = ROUNDED_MAT
-		X, Y, W, H = x, y, w, h
-		return RECT
-	end,
-	Circle = function(x, y, r)
-		RESET_PARAMS()
-		MAT = ROUNDED_MAT
-		SHAPE = SHAPES[SHAPE_CIRCLE]
-		X, Y, W, H = x - r / 2, y - r / 2, r, r
-		r = r / 2
-		TL, TR, BL, BR = r, r, r, r
-		return CIRCLE
-	end
-}
 
 -- Flags
 package.NO_TL = NO_TL

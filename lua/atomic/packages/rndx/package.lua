@@ -9,7 +9,7 @@ return {
     dir = "common",
     client = {"client"}
   },
-  dependency = {
+  dependencies = {
     client = {
       atomic = "^1.0.0-rc.4"
     }

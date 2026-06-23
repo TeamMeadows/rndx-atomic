@@ -1,3 +1,4 @@
 *.vcs
 *.inc
 sound.cache
+artifacts
