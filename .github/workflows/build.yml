@@ -20,17 +20,13 @@ jobs:
           cd shaders
           python build.py
 
-      - name: Bundle RNDX
-        uses: TeamMeadows/bundler@v0.2.0
-        with:
-          name: rndx
-          type: package
-
       - name: Pack bundle into zip
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path artifacts
-          Compress-Archive -Path dist/rndx -DestinationPath artifacts/rndx-release.zip
+          New-Item -ItemType Directory -Force -Path artifacts/rndx
+          Copy-Item lua artifacts/rndx -Recurse -Force
+          Copy-Item LICENSE artifacts/rndx
+          Compress-Archive -Path artifacts/rndx -DestinationPath artifacts/rndx-release.zip
 
       - name: Publish to releases
         uses: softprops/action-gh-release@v2
