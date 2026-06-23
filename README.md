@@ -1,4 +1,4 @@
-# RNDX for Atomic
+# RNDX for Atomic <img src="https://img.shields.io/github/release/TeamMeadows/rndx-atomic.svg"> <img src="https://img.shields.io/github/actions/workflow/status/TeamMeadows/rndx-atomic/build.yml">
 This repository is a port of [RNDX](https://github.com/srlion/rndx) to the Atomic Framework.
 
 ## Installation
